@@ -1,71 +1,62 @@
 #!/bin/bash
-# Suspend LINKod processes with kill -STOP and resume them with kill -CONT.
+# linkod-pause.sh: Suspend LINKod processes with kill -STOP and resume with kill -CONT
+# Authors: LINKod Group (BSIT 4)
+# Usage: sudo ./linkod-pause.sh --pause | --resume | --status
+# Note: Assisted by AI tools (Section 5.6); reviewed and tested by the group.
 
-set -u
-
-CONFIG_FILE="/etc/linkod/linkod.conf"
-
-show_help() {
-    cat <<EOF
-Usage: sudo $(basename "$0") --pause | --resume | --status | --help
-
-Options:
-  --pause    Freeze LINKod processes with kill -STOP
-  --resume   Resume LINKod processes with kill -CONT
-  --status   Show current process state (T = paused, S/R = running)
-  --help     Show this help message
-EOF
-}
-
-if [[ $# -ne 1 ]]; then
-    echo "[ERROR] Provide one option (--pause, --resume, --status, or --help)." >&2
-    exit 2
-fi
-
-ACTION="$1"
-if [[ "${ACTION}" == "--help" ]] || [[ "${ACTION}" == "-h" ]]; then
-    show_help
+if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    echo "Usage: sudo ./linkod-pause.sh --pause | --resume | --status"
+    echo "Options:"
+    echo "  --pause    Suspend nginx and php-fpm processes with kill -STOP"
+    echo "  --resume   Resume nginx and php-fpm processes with kill -CONT"
+    echo "  --status   Show process state (T = paused, S/R = running)"
+    echo "  --help     Show this help message"
+    echo "Example:"
+    echo "  sudo ./linkod-pause.sh --pause"
     exit 0
 fi
 
-# Check for root privileges
-if [[ "${EUID}" -ne 0 ]]; then
-    echo "[ERROR] Run this script with sudo." >&2
+if [ $# -ne 1 ]; then
+    echo "Error: Provide one option (--pause, --resume, --status, or --help)."
+    exit 2
+fi
+
+# Check that the script is run as root
+USER_ID=`id -u`
+if [ $USER_ID -ne 0 ]; then
+    echo "Error: Please run this script with sudo."
     exit 1
 fi
 
-[[ -f "${CONFIG_FILE}" ]] && source "${CONFIG_FILE}" || APP_NAME="LINKod"
-
-# Get running nginx and php-fpm PIDs
-mapfile -t APP_PIDS < <(pgrep -f "(nginx|php-fpm)" || true)
-
-if [[ "${#APP_PIDS[@]}" -eq 0 ]]; then
-    echo "[ERROR] No running ${APP_NAME} processes found." >&2
+# Find running nginx and php-fpm process IDs
+PIDS=`pgrep -f "nginx|php-fpm"`
+if [ "$PIDS" = "" ]; then
+    echo "Error: No running nginx or php-fpm processes found."
     exit 1
 fi
 
-case "${ACTION}" in
+case "$1" in
     --pause|pause)
-        echo "[INFO] Suspending ${APP_NAME} processes with kill -STOP..."
-        for pid in "${APP_PIDS[@]}"; do
-            kill -STOP "${pid}" || exit 1
+        echo "Suspending LINKod processes with kill -STOP..."
+        for PID in $PIDS; do
+            kill -STOP $PID
         done
-        echo "[SUCCESS] Processes are PAUSED (state T)."
-        ps -o pid,stat,comm -p "${APP_PIDS[@]}"
+        echo "SUCCESS: Processes are now PAUSED (state T)."
+        ps -o pid,stat,comm -p $PIDS
         ;;
     --resume|resume)
-        echo "[INFO] Resuming ${APP_NAME} processes with kill -CONT..."
-        for pid in "${APP_PIDS[@]}"; do
-            kill -CONT "${pid}" || exit 1
+        echo "Resuming LINKod processes with kill -CONT..."
+        for PID in $PIDS; do
+            kill -CONT $PID
         done
-        echo "[SUCCESS] Processes are RESUMED."
-        ps -o pid,stat,comm -p "${APP_PIDS[@]}"
+        echo "SUCCESS: Processes are now RESUMED."
+        ps -o pid,stat,comm -p $PIDS
         ;;
     --status|status)
-        ps -o pid,stat,comm -p "${APP_PIDS[@]}"
+        ps -o pid,stat,comm -p $PIDS
         ;;
     *)
-        echo "[ERROR] Invalid option: ${ACTION}" >&2
+        echo "Error: Invalid option $1. Use --pause, --resume, --status, or --help."
         exit 2
         ;;
 esac

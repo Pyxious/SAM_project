@@ -1,109 +1,86 @@
 #!/bin/bash
-# Report LINKod service state, listening ports, process CPU/RAM, and system resources.
-
-set -u
+# linkod-status.sh: Report LINKod service state, ports, CPU/RAM, and system resources
+# Authors: LINKod Group (BSIT 4)
+# Usage: sudo ./linkod-status.sh [--save FILE]
+# Note: Assisted by AI tools (Section 5.6); reviewed and tested by the group.
 
 CONFIG_FILE="/etc/linkod/linkod.conf"
-REPORT_FILE=""
 
-show_help() {
-    cat <<EOF
-Usage: sudo $(basename "$0") [--save FILE] [--help]
+if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    echo "Usage: sudo ./linkod-status.sh [--save FILE]"
+    echo "Options:"
+    echo "  --save FILE   Save the status report to a file"
+    echo "  --help        Show this help message"
+    echo "Example:"
+    echo "  sudo ./linkod-status.sh --save /var/log/linkod/status.txt"
+    exit 0
+fi
 
-Options:
-  --save FILE   Save the status output to a file
-  --help        Show this help message
-EOF
-}
-
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --help|-h)
-            show_help
-            exit 0
-            ;;
-        --save)
-            [[ $# -lt 2 ]] && { echo "[ERROR] Missing filename for --save." >&2; exit 2; }
-            REPORT_FILE="$2"
-            shift 2
-            ;;
-        *)
-            echo "[ERROR] Unknown option: $1" >&2
-            exit 2
-            ;;
-    esac
-done
-
-# Check for root privileges
-if [[ "${EUID}" -ne 0 ]]; then
-    echo "[ERROR] Run this script with sudo." >&2
+# Check that the script is run as root
+USER_ID=`id -u`
+if [ $USER_ID -ne 0 ]; then
+    echo "Error: Please run this script with sudo."
     exit 1
 fi
 
-if [[ -f "${CONFIG_FILE}" ]]; then
-    source "${CONFIG_FILE}"
+if [ -f "$CONFIG_FILE" ]; then
+    . "$CONFIG_FILE"
 else
     APP_NAME="LINKod"
     APP_DIR="/var/www/linkod"
-    APP_PORT="80"
-    DB_PORT="3306"
 fi
 
-PHP_VER="$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || echo '8.3')"
-PHP_FPM_SERVICE="php${PHP_VER}-fpm"
-SERVICES=("mariadb" "${PHP_FPM_SERVICE}" "nginx")
-OVERALL_OK=0
+SERVICES="mariadb php8.5-fpm nginx"
+EXIT_CODE=0
 
-generate_report() {
-    echo "=== ${APP_NAME} Status Report ($(date '+%Y-%m-%d %H:%M:%S')) ==="
-    echo ""
-    echo "1. SERVICE STATE"
-    for svc in "${SERVICES[@]}"; do
-        if systemctl is-active --quiet "${svc}"; then
-            echo "  [RUNNING] ${svc}"
-        else
-            echo "  [STOPPED] ${svc}"
-            OVERALL_OK=1
-        fi
-    done
-
-    # Check if processes are paused (state T)
-    PAUSED_COUNT="$(ps -eo stat,comm | grep -E '^T.*(php-fpm|nginx)' | wc -l)"
-    if [[ "${PAUSED_COUNT}" -gt 0 ]]; then
-        echo "  [PAUSED]  ${PAUSED_COUNT} worker processes are suspended (state T)"
-    fi
-
-    # Check if Laravel maintenance mode is active
-    if [[ -f "${APP_DIR}/storage/framework/down" ]]; then
-        echo "  [MAINT]   Maintenance Mode is ON"
+NOW=`date`
+echo "=== $APP_NAME Status Report ($NOW) ==="
+echo ""
+echo "1. SERVICE STATE"
+for S in $SERVICES; do
+    if systemctl is-active --quiet "$S"; then
+        echo "  $S: RUNNING"
     else
-        echo "  [LIVE]    Maintenance Mode is OFF"
+        echo "  $S: STOPPED"
+        EXIT_CODE=1
     fi
+done
 
-    echo ""
-    echo "2. LISTENING PORTS (${APP_PORT}, ${DB_PORT})"
-    ss -tulpn | grep -E ":(80|3306)\b" || echo "  [WARN] No listeners on ports ${APP_PORT} or ${DB_PORT}."
-
-    echo ""
-    echo "3. PROCESS CPU & MEMORY USAGE"
-    printf "  %-8s %-6s %-6s %-6s %s\n" "PID" "STAT" "%CPU" "%MEM" "COMMAND"
-    ps -eo pid,stat,%cpu,%mem,comm --sort=-%mem | grep -E "(nginx|php-fpm|mariadbd|mysqld)" | awk '{printf "  %-8s %-6s %-6s %-6s %s\n", $1, $2, $3, $4, $5}'
-
-    echo ""
-    echo "4. SYSTEM RESOURCES (top, free, df)"
-    top -bn1 | grep -E "^(%Cpu|top -)" | sed 's/^/  /'
-    echo ""
-    free -h | sed 's/^/  /'
-    echo ""
-    df -h / | sed 's/^/  /'
-}
-
-if [[ -n "${REPORT_FILE}" ]]; then
-    mkdir -p "$(dirname "${REPORT_FILE}")"
-    generate_report | tee "${REPORT_FILE}"
-    chmod 640 "${REPORT_FILE}"
-else
-    generate_report
+# Check if any worker processes are paused in state T
+PAUSED=`ps -eo stat,comm | grep -E "^T.*(php-fpm|nginx)" | wc -l`
+if [ $PAUSED -gt 0 ]; then
+    echo "  Process State: PAUSED ($PAUSED processes in state T)"
 fi
 
-exit "${OVERALL_OK}"
+# Check if maintenance mode file exists
+if [ -f "$APP_DIR/storage/framework/down" ]; then
+    echo "  Maintenance Mode: ON (HTTP 503)"
+else
+    echo "  Maintenance Mode: OFF (Live)"
+fi
+
+echo ""
+echo "2. LISTENING PORTS (80 and 3306)"
+ss -tulpn | grep -E ":(80|3306)\b"
+
+echo ""
+echo "3. PROCESS CPU AND MEMORY USAGE"
+ps -eo pid,stat,%cpu,%mem,comm | grep -E "PID|nginx|php-fpm|mariadbd"
+
+echo ""
+echo "4. SYSTEM RESOURCES (top, free, df)"
+top -bn1 | grep -E "^(top -|%Cpu)"
+echo ""
+free -h
+echo ""
+df -h /
+
+# Save a copy to a file if --save FILE was provided
+if [ "$1" = "--save" ] && [ $# -eq 2 ]; then
+    "$0" > "$2"
+    chmod 640 "$2"
+    echo ""
+    echo "Saved report to $2"
+fi
+
+exit $EXIT_CODE
