@@ -1,0 +1,17 @@
+# Required Skills Map (Section 5.4 - Table 9)
+
+Below is the completed **Table 9 Required Skills Map** showing the exact script name and line numbers where each of the 11 IT 123 skills appears in our Option 1B toolkit.
+
+| Skill | Module | Where it appears in your work |
+| :--- | :--- | :--- |
+| **Variables and correct quoting** | 04 | `scripts/linkod-install.sh` (Lines 7–8, 22, 33–51) and `scripts/linkod-update.sh` (Lines 53–58: `"$BACKUP_DIR"`, `"$ARCHIVE_FILE"`, `"$SQL_FILE"`) |
+| **Command chaining with `&&`, `\|\|`, or `;` to act on success or failure** | 04 | `scripts/linkod-install.sh` (Line 62: `apt-get update -y && apt-get install -y --no-install-recommends "$P"`; Line 107: `php artisan key:generate --force && php artisan migrate --force && php artisan db:seed --force`) and `scripts/linkod-update.sh` (Line 76: `tar -tzf "$ARCHIVE_FILE" >/dev/null 2>&1 && [ -s "$SQL_FILE" ]`) |
+| **An executable script (`chmod +x`) with an interpreter line, written in a command-line editor such as `nano` or `vi`** | 13 | All six scripts in `scripts/` (`linkod-install.sh`, `linkod-service.sh`, `linkod-status.sh`, `linkod-update.sh`, `linkod-pause.sh`, `linkod-maintenance.sh`), Line 1 (`#!/bin/bash`), with executable permissions (`755`). |
+| **Script input through positional parameters (`$1`, `$#`) or `read`** | 13 | `scripts/linkod-install.sh` (Lines 11, 21–23: `$1`, `$#`); `scripts/linkod-service.sh` (Lines 10, 23, 45: `if [ $# -ne 1 ]`, `case "$1" in`); `scripts/linkod-update.sh` (Lines 9, 19–24: `$#`, `$1`). |
+| **A conditional (`if` or `case`) that tests a condition or a command's exit status (`$?`)** | 13 | `scripts/linkod-install.sh` (Lines 75–78: `if [ $? -ne 0 ]; then ... fi`); `scripts/linkod-service.sh` (Lines 45–88: `case "$1" in ... esac`); `scripts/linkod-update.sh` (Lines 77–80: `if [ $? -ne 0 ]; then ... fi`; Lines 93–104: `if [ "$HTTP_CODE" = "200" ]; then ... else ... fi`). |
+| **A loop (`for` or `while`) that processes more than one item** | 13 | `scripts/linkod-install.sh` (Lines 59–68: `for P in $PKGS; do ... done`); `scripts/linkod-service.sh` (Lines 54–61: `for S in $START_LIST; do ... done`); `scripts/linkod-pause.sh` (Lines 41–43: `for PID in $PIDS; do ... done`). |
+| **A pipe with redirection and a regular expression** | 11 | `scripts/linkod-status.sh` (Line 50: `ps -eo stat,comm \| grep -E "^T.*(php-fpm\|nginx)" \| wc -l`; Line 64: `ss -tulpn \| grep -E ":(80\|3306)\b"`; Line 68: `ps -eo pid,stat,%cpu,%mem,comm \| grep -E "PID\|nginx\|php-fpm\|mariadbd"`). |
+| **Archiving with compression, plus a check that the archive is intact** | 12 | `scripts/linkod-update.sh` (Lines 67–80: `tar -czf "$ARCHIVE_FILE" -C "$APP_DIR" .` followed by `tar -tzf "$ARCHIVE_FILE" >/dev/null 2>&1`). |
+| **Correct ownership and permissions on what your work creates or changes** | 10 | `scripts/linkod-install.sh` (Lines 42–43: `chown root:root "$CONFIG_FILE"`, `chmod 600 "$CONFIG_FILE"`; Lines 115–120: `chown -R "$APP_USER:$APP_GROUP" "$APP_DIR"`, `chmod 750`, `chmod 640`, `chmod 775`, `chmod 600 "$APP_DIR/.env"`). |
+| **Users, groups, or privilege checks** | 08, 09 | All six scripts (e.g., `scripts/linkod-install.sh` Lines 26–30: ``USER_ID=`id -u` ``, `if [ $USER_ID -ne 0 ]; then`; Lines 46–49: ``PERM=`stat -c "%a" "$CONFIG_FILE"` ``; `scripts/linkod-update.sh` Line 87: `sudo -u "$APP_USER"`). |
+| **A resource check using `df`, `free`, or `top` output** | 15 | `scripts/linkod-status.sh` (Lines 72–76: `top -bn1 \| grep -E "^(top -\|%Cpu)"`, `free -h`, and `df -h /`). |

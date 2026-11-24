@@ -1,0 +1,61 @@
+=== 1. Suspend LINKod Processes (kill -STOP) ===
+[INFO] Suspending LINKod processes (16 PIDs) with kill -STOP...
+[SUCCESS] LINKod processes are now PAUSED (state 'T'). Requests will freeze until resumed.
+    PID STAT COMMAND
+    132 Ts   php-fpm8.5
+    193 Ts   nginx
+    197 T    nginx
+    198 T    nginx
+    200 T    nginx
+    201 T    nginx
+    202 T    nginx
+    203 T    nginx
+    204 T    nginx
+    205 T    nginx
+    206 T    nginx
+    207 T    nginx
+    208 T    nginx
+    209 T    nginx
+    352 T    php-fpm8.5
+    353 T    php-fpm8.5
+
+=== 2. Check Suspended Process States (state T) ===
+[INFO] Current LINKod process states (T = Paused/Stopped, S/R = Running):
+    PID STAT COMMAND
+    132 Ts   php-fpm8.5
+    193 Ts   nginx
+    197 T    nginx
+    198 T    nginx
+    200 T    nginx
+    201 T    nginx
+    202 T    nginx
+    203 T    nginx
+    204 T    nginx
+    205 T    nginx
+    206 T    nginx
+    207 T    nginx
+    208 T    nginx
+    209 T    nginx
+    352 T    php-fpm8.5
+    353 T    php-fpm8.5
+
+=== 3. Resume LINKod Processes (kill -CONT) ===
+[INFO] Resuming LINKod processes (16 PIDs) with kill -CONT...
+[SUCCESS] LINKod processes are now RESUMED and responding normally.
+    PID STAT COMMAND
+    132 Ss   php-fpm8.5
+    193 Ss   nginx
+    197 S    nginx
+    198 S    nginx
+    200 S    nginx
+    201 S    nginx
+    202 S    nginx
+    203 S    nginx
+    204 S    nginx
+    205 S    nginx
+    206 S    nginx
+    207 S    nginx
+    208 S    nginx
+    209 S    nginx
+    352 S    php-fpm8.5
+    353 S    php-fpm8.5

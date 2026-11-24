@@ -1,0 +1,16 @@
+=== 1. Enable Maintenance Mode (HTTP 503 Temporarily Unavailable) ===
+[INFO] Switching LINKod into Maintenance Mode...
+
+   INFO  Application is now in maintenance mode.  
+
+[SUCCESS] LINKod is now in Maintenance Mode (Server answered HTTP 503 - 'Temporarily Unavailable').
+
+=== 2. Check Maintenance Mode Status ===
+[STATUS] LINKod Maintenance Mode is ACTIVE (HTTP 503 Temporarily Unavailable).
+
+=== 3. Disable Maintenance Mode (Return to Live HTTP 200) ===
+[INFO] Switching LINKod out of Maintenance Mode (back to live)...
+
+   INFO  Application is now live.  
+
+[SUCCESS] LINKod is now LIVE and accessible to users (Server answered HTTP 200).
