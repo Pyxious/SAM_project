@@ -2,7 +2,7 @@
 # linkod-status.sh: Report LINKod service state, ports, CPU/RAM, and system resources
 # Authors: LINKod Group (BSIT 4)
 # Usage: sudo ./linkod-status.sh [--save FILE]
-# Note: Assisted by AI tools (Section 5.6); reviewed and tested by the group.
+# Note: Reviewed and tested by the group.
 
 CONFIG_FILE="/etc/linkod/linkod.conf"
 
@@ -45,8 +45,7 @@ for S in $SERVICES; do
         EXIT_CODE=1
     fi
 done
-
-# Check if any worker processes are paused in state T
+# Assisted by AI: Count paused workers (state T) and check Laravel maintenance mode file
 PAUSED=`ps -eo stat,comm | grep -E "^T.*(php-fpm|nginx)" | wc -l`
 if [ $PAUSED -gt 0 ]; then
     echo "  Process State: PAUSED ($PAUSED processes in state T)"
@@ -54,9 +53,9 @@ fi
 
 # Check if maintenance mode file exists
 if [ -f "$APP_DIR/storage/framework/down" ]; then
-    echo "  Maintenance Mode: ON (HTTP 503)"
+    echo "  Maintenance Mode: ON "
 else
-    echo "  Maintenance Mode: OFF (Live)"
+    echo "  Maintenance Mode: OFF "
 fi
 
 echo ""

@@ -2,14 +2,14 @@
 # linkod-pause.sh: Suspend LINKod processes with kill -STOP and resume with kill -CONT
 # Authors: LINKod Group (BSIT 4)
 # Usage: sudo ./linkod-pause.sh --pause | --resume | --status
-# Note: Assisted by AI tools (Section 5.6); reviewed and tested by the group.
+# Note: Reviewed and tested by the group.
 
 if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     echo "Usage: sudo ./linkod-pause.sh --pause | --resume | --status"
     echo "Options:"
     echo "  --pause    Suspend nginx and php-fpm processes with kill -STOP"
     echo "  --resume   Resume nginx and php-fpm processes with kill -CONT"
-    echo "  --status   Show process state (T = paused, S/R = running)"
+    echo "  --status   Show process state (T = paused, S = running)"
     echo "  --help     Show this help message"
     echo "Example:"
     echo "  sudo ./linkod-pause.sh --pause"
@@ -27,8 +27,7 @@ if [ $USER_ID -ne 0 ]; then
     echo "Error: Please run this script with sudo."
     exit 1
 fi
-
-# Find running nginx and php-fpm process IDs
+# Assisted by AI: Find all running nginx and php-fpm PIDs before sending SIGSTOP/SIGCONT
 PIDS=`pgrep -f "nginx|php-fpm"`
 if [ "$PIDS" = "" ]; then
     echo "Error: No running nginx or php-fpm processes found."
@@ -37,7 +36,7 @@ fi
 
 case "$1" in
     --pause|pause)
-        echo "Suspending LINKod processes with kill -STOP..."
+        echo "Suspending LINKod processes..."
         for PID in $PIDS; do
             kill -STOP $PID
         done
@@ -45,7 +44,7 @@ case "$1" in
         ps -o pid,stat,comm -p $PIDS
         ;;
     --resume|resume)
-        echo "Resuming LINKod processes with kill -CONT..."
+        echo "Resuming LINKod processes..."
         for PID in $PIDS; do
             kill -CONT $PID
         done

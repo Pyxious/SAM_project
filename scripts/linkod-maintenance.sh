@@ -2,7 +2,7 @@
 # linkod-maintenance.sh: Switch LINKod to "temporarily unavailable" (HTTP 503) and back
 # Authors: LINKod Group (BSIT 4)
 # Usage: sudo ./linkod-maintenance.sh --on | --off | --status
-# Note: Assisted by AI tools (Section 5.6); reviewed and tested by the group.
+# Note: Reviewed and tested by the group.
 
 CONFIG_FILE="/etc/linkod/linkod.conf"
 
@@ -37,24 +37,25 @@ fi
 
 . "$CONFIG_FILE"
 
+# Assisted by AI (41-65): Toggle Laravel maintenance mode (HTTP 503) and check response with curl
 case "$1" in
     --on|on)
-        echo "Enabling maintenance mode..."
+        echo "Enabling maintenance mode."
         sudo -u "$APP_USER" php "$APP_DIR/artisan" down --retry=60
         HTTP_CODE=`curl -s -o /dev/null -w "%{http_code}" "$APP_URL"`
-        echo "SUCCESS: Maintenance mode is ON (HTTP $HTTP_CODE - Temporarily Unavailable)."
+        echo "SUCCESS: Maintenance mode is ON (HTTP $HTTP_CODE is Temporarily Unavailable)."
         ;;
     --off|off)
         echo "Disabling maintenance mode..."
         sudo -u "$APP_USER" php "$APP_DIR/artisan" up
         HTTP_CODE=`curl -s -L -o /dev/null -w "%{http_code}" "$APP_URL"`
-        echo "SUCCESS: Maintenance mode is OFF (HTTP $HTTP_CODE - Live)."
+        echo "SUCCESS: Maintenance mode is OFF (HTTP $HTTP_CODE is Live)."
         ;;
     --status|status)
         if [ -f "$APP_DIR/storage/framework/down" ]; then
-            echo "STATUS: Maintenance mode is ON (HTTP 503)."
+            echo "STATUS: Maintenance mode is ON."
         else
-            echo "STATUS: Maintenance mode is OFF (Live)."
+            echo "STATUS: Maintenance mode is OFF, app is LIVE."
         fi
         ;;
     *)

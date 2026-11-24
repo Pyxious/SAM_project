@@ -2,7 +2,7 @@
 # linkod-install.sh: Install and configure LINKod and its services on Ubuntu
 # Authors: LINKod Group (BSIT 4)
 # Usage: sudo ./linkod-install.sh [/path/to/app-source]
-# Note: Assisted by AI tools (Section 5.6); reviewed and tested by the group.
+# Note: Reviewed and tested by the group.
 
 CONFIG_FILE="/etc/linkod/linkod.conf"
 SOURCE_DIR="/home/justin/it123-linkod/app-source"
@@ -22,10 +22,10 @@ if [ $# -ge 1 ]; then
     SOURCE_DIR="$1"
 fi
 
-# Check that the script is run as root (UID 0)
+# Check if ran by sudo/root
 USER_ID=`id -u`
 if [ $USER_ID -ne 0 ]; then
-    echo "Error: Please run this script with sudo."
+    echo "Error: Sudo is needed to run this script."
     exit 1
 fi
 
@@ -51,8 +51,7 @@ fi
 . "$CONFIG_FILE"
 
 echo "=== Installing $APP_NAME ==="
-
-# 1. Check and install required Ubuntu packages
+# Assisted by AI: Check each required package and install only if missing (offline-safe)
 echo "[1/6] Checking required packages..."
 PKGS="nginx mariadb-server php-fpm php-mysql php-xml php-mbstring php-curl php-zip php-gd php-bcmath php-intl composer nodejs npm curl unzip rsync"
 
@@ -68,7 +67,7 @@ for P in $PKGS; do
 done
 echo "All required packages are installed."
 
-# 2. Start MariaDB and create database and user
+# Start MariaDB and create database and user
 echo "[2/6] Setting up MariaDB database ($DB_NAME)..."
 systemctl start mariadb
 mysql -u root -e "CREATE DATABASE IF NOT EXISTS $DB_NAME; CREATE USER IF NOT EXISTS '$DB_USER'@'$DB_HOST' IDENTIFIED BY '$DB_PASS'; GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'$DB_HOST'; FLUSH PRIVILEGES;"
@@ -77,7 +76,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 3. Copy application files and set up .env
+# Copy application files and set up .env
 echo "[3/6] Copying application files to $APP_DIR..."
 mkdir -p "$APP_DIR" "$BACKUP_DIR" "$LOG_DIR"
 rsync -a --delete --exclude='.git' --exclude='node_modules' "$SOURCE_DIR/" "$APP_DIR/"
@@ -95,9 +94,10 @@ sed -i "s|^DB_USERNAME=.*|DB_USERNAME=$DB_USER|" "$APP_DIR/.env"
 sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=\"$DB_PASS\"|" "$APP_DIR/.env"
 sed -i "s|^FILESYSTEM_DISK=.*|FILESYSTEM_DISK=local|" "$APP_DIR/.env"
 
-# 4. Run Composer, key generation, database migrations, and seeders
+# Run Composer, key generation, database migrations, and seeders
 echo "[4/6] Running Composer and database migrations..."
 cd "$APP_DIR"
+# Reuse pre-cached vendor/ if present; otherwise install Composer packages
 if [ -f "$APP_DIR/vendor/autoload.php" ]; then
     COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload --optimize --no-dev --no-interaction
 else
@@ -110,7 +110,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 5. Set ownership and permissions
+# Set ownership and permissions
 echo "[5/6] Setting ownership and permissions on $APP_DIR..."
 chown -R "$APP_USER:$APP_GROUP" "$APP_DIR"
 find "$APP_DIR" -type d -exec chmod 750 {} \;
@@ -122,7 +122,7 @@ chmod 600 "$APP_DIR/.env"
 systemctl restart php8.5-fpm && systemctl restart nginx
 date > "$LOCK_FILE"
 
-# 6. Check that LINKod responds with HTTP 200
+# Check that LINKod responds with HTTP 200
 echo "[6/6] Verifying $APP_URL..."
 HTTP_CODE=`curl -s -L -o /dev/null -w "%{http_code}" "$APP_URL"`
 if [ "$HTTP_CODE" = "200" ]; then

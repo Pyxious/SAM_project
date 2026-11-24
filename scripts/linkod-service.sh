@@ -2,7 +2,7 @@
 # linkod-service.sh: Start and stop LINKod services in the correct order
 # Authors: LINKod Group (BSIT 4)
 # Usage: sudo ./linkod-service.sh --start | --stop | --restart
-# Note: Assisted by AI tools (Section 5.6); reviewed and tested by the group.
+# Note: Reviewed and tested by the group.
 
 CONFIG_FILE="/etc/linkod/linkod.conf"
 
@@ -39,6 +39,8 @@ fi
 
 . "$CONFIG_FILE"
 
+
+# Assisted by AI: Define service order and prevents starting a second copy if it is already running
 START_LIST="mariadb php8.5-fpm nginx"
 STOP_LIST="nginx php8.5-fpm mariadb"
 

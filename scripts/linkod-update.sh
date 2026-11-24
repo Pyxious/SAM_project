@@ -2,7 +2,7 @@
 # linkod-update.sh: Back up LINKod, verify archive, apply update, and check HTTP 200
 # Authors: LINKod Group (BSIT 4)
 # Usage: sudo ./linkod-update.sh <UPDATE_DIR>
-# Note: Assisted by AI tools (Section 5.6); reviewed and tested by the group.
+# Note: Reviewed and tested by the group.
 
 CONFIG_FILE="/etc/linkod/linkod.conf"
 
@@ -17,7 +17,7 @@ fi
 
 # Require the update directory argument
 if [ $# -lt 1 ]; then
-    echo "Error: Missing UPDATE_DIR argument. Run with --help for usage."
+    echo "Error: Missing UPDATE_DIR argument. Run --help for usage."
     exit 2
 fi
 
@@ -49,7 +49,7 @@ if [ ! -d "$UPDATE_DIR" ]; then
     exit 1
 fi
 
-# 1. Back up database and application files
+# Back up database and application files
 STAMP=`date +%Y%m%d-%H%M%S`
 mkdir -p "$BACKUP_DIR"
 chmod 700 "$BACKUP_DIR"
@@ -58,6 +58,7 @@ ARCHIVE_FILE="$BACKUP_DIR/linkod-pre-update-$STAMP.tar.gz"
 SQL_FILE="$BACKUP_DIR/linkod-db-$STAMP.sql"
 
 echo "[1/4] Backing up database and application files..."
+# Assisted by AI: Dump database (--skip-ssl avoids loopback SSL warning) and archive files
 MYSQL_PWD="$DB_PASS" mysqldump --skip-ssl -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" > "$SQL_FILE"
 if [ $? -ne 0 ]; then
     echo "Error: Database backup failed."
@@ -71,7 +72,7 @@ if [ $? -ne 0 ]; then
 fi
 chmod 600 "$ARCHIVE_FILE" "$SQL_FILE"
 
-# 2. Check that the backup archive is intact
+# Check that the backup archive is intact
 echo "[2/4] Verifying backup archive ($ARCHIVE_FILE)..."
 tar -tzf "$ARCHIVE_FILE" >/dev/null 2>&1 && [ -s "$SQL_FILE" ]
 if [ $? -ne 0 ]; then
@@ -80,13 +81,13 @@ if [ $? -ne 0 ]; then
 fi
 echo "Backup verified: $ARCHIVE_FILE"
 
-# 3. Copy update files into the application directory
+# Copy update files into the application directory
 echo "[3/4] Applying update from $UPDATE_DIR..."
 cp -r "$UPDATE_DIR/." "$APP_DIR/"
 chown -R "$APP_USER:$APP_GROUP" "$APP_DIR"
 sudo -u "$APP_USER" php "$APP_DIR/artisan" optimize:clear >/dev/null 2>&1
 
-# 4. Check that the application still works (HTTP 200)
+# Check that the application still works
 echo "[4/4] Checking if $APP_NAME still responds with HTTP 200..."
 HTTP_CODE=`curl -s -L -o /dev/null -w "%{http_code}" "$APP_URL"`
 
@@ -95,6 +96,7 @@ if [ "$HTTP_CODE" = "200" ]; then
     echo "Backup saved at: $ARCHIVE_FILE"
     exit 0
 else
+    # Assisted by AI: Print exact manual tar restore command when HTTP check fails
     echo "FAILURE: Application check failed after update (HTTP $HTTP_CODE)!"
     echo "To restore the backup by hand, run this exact command:"
     echo ""
